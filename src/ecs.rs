@@ -38,5 +38,38 @@ pub trait MutEntityAccessor<T>: HasEntity + Sized {
   }
 }
 
+pub trait EntityDataBase<World> where World: WorldBase {
+  fn new(world: &World, en: Entity) -> Self;
+}
+
+pub trait MutEntityDataBase<World> where World: WorldBase {
+  fn new(world: &mut World, en: Entity) -> Self;
+}
+
+pub trait WorldBase: Sized {
+  type Components;
+  type EntityData: EntityDataBase<Self>;
+  type MutEntityData: MutEntityDataBase<Self>;
+  type Res;
+
+  fn claim_next_entity_id(&mut self) -> i32;
+  fn entities_mut(&mut self) -> &mut Entities;
+  fn frame(&mut self, res: Self::Res);
+
+  fn build_entity(&mut self) -> Self::MutEntityData {
+    let en = Entity { id: self.claim_next_entity_id() };
+    self.entities_mut().insert(en, ());
+    Self::MutEntityData::new(self, en)
+  }
+
+  fn entity_data(&self, en: Entity) -> Self::EntityData {
+    Self::EntityData::new(self, en)
+  }
+
+  fn entity_data_mut(&mut self, en: Entity) -> Self::MutEntityData {
+    Self::MutEntityData::new(self, en)
+  }
+}
+
 pub type Map<T> = HashMap<Entity, T>;
 pub type Entities = Map<()>;
